@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NEPSE OS</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0A0A0B">
+  <meta name="description" content="NEPSE live, AI predictions, Fear &amp; Greed Nepal. Fastest on 2G.">
+  <style>
+    :root {
+      --bg: #0A0A0B;
+      --gold: #D4AF37;
+      --text: #EAEAEB;
+      --text2: #9D9D9D;
+      --surface: #1A1A1E;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+      min-height:100vh; display:flex; align-items:center; justify-content:center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 400px; width:100%;
+      display:flex; flex-direction:column; gap:16px;
+    }
+    .box {
+      background: var(--surface);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .right-now .index {
+      font-size: 2.5rem; font-weight:700; color:var(--gold);
+      display:flex; align-items:baseline; gap:8px;
+    }
+    .right-now .change {
+      font-size:1rem; font-weight:600;
+    }
+    .ai-says .poster {
+      font-size:1.1rem; font-weight:700; color:var(--gold);
+      margin-top:12px;
+    }
+    .emotion .meter-bar {
+      height:8px; background:#333; border-radius:4px;
+      margin:8px 0;
+    }
+    .emotion .fill {
+      height:100%; border-radius:4px;
+      background: linear-gradient(90deg, #FF1744, #FFC107, #00E676);
+      width:0%;
+    }
+    .lang-toggle {
+      position:fixed; top:16px; right:16px;
+      background:var(--surface); padding:8px 12px;
+      border-radius:8px; font-size:0.85rem;
+      color:var(--gold); cursor:pointer;
+      user-select:none;
+    }
+    #audio-control {
+      position:fixed; top:16px; left:16px;
+      background:var(--surface); padding:8px;
+      border-radius:8px; font-size:1.2rem;
+      cursor:pointer;
+    }
+    .muted { opacity:0.5; }
+  </style>
+</head>
+<body>
+  <div id="audio-control" onclick="toggleAudio()" class="muted" title="Toggle sounds">🔇</div>
+  <div class="lang-toggle" id="langToggle" onclick="toggleLang()">नेपाली</div>
+  <div class="container">
+    <div class="box right-now" id="rightNow">
+      <div class="index">
+        <span id="idxVal">--</span>
+        <span class="change" id="idxChange"></span>
+      </div>
+      <div style="color:var(--text2); font-size:0.8rem;" id="idxMeta"></div>
+      <div style="margin-top:8px; font-size:0.9rem;" id="turnover"></div>
+    </div>
+    <div class="box ai-says" id="aiSays">
+      <div style="font-size:0.8rem; color:var(--text2);">AI Says</div>
+      <div id="predictionText" style="margin:8px 0;"></div>
+      <div class="poster" id="posterLine"></div>
+      <div style="font-size:0.75rem; color:var(--text2); margin-top:8px;" id="tenYCheck"></div>
+    </div>
+    <div class="box emotion">
+      <div style="display:flex; justify-content:space-between;">
+        <span id="emotionLabel">Fear & Greed Nepal</span>
+        <span id="emotionValue" style="color:var(--gold);">50</span>
+      </div>
+      <div class="meter-bar"><div class="fill" id="meterFill"></div></div>
+    </div>
+  </div>
+  <script>
+    let audioEnabled = false;
+    const tickSound = new Audio('data:audio/wav;base64,UklGRnoEAAAXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoEAAB2...');
+    tickSound.volume = 0.1;
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('audio-control').classList.toggle('muted', !audioEnabled);
+      document.getElementById('audio-control').innerHTML = audioEnabled ? '🔊' : '🔇';
+    }
+    let lang = 'ne';
+    const t = {
+      en: { aiSays:'AI Says', emotion:'Fear & Greed Nepal', rightNow:'Right Now', turnover:'Turnover' },
+      ne: { aiSays:'AI भन्छ', emotion:'डर र लोभ नेपाल', rightNow:'अहिले', turnover:'कारोबार' }
+    };
+    function toggleLang() {
+      lang = lang==='ne' ? 'en' : 'ne';
+      document.getElementById('langToggle').innerHTML = lang==='ne' ? 'नेपाली' : 'English';
+      updateTexts();
+    }
+    function updateTexts() {
+      document.querySelector('#aiSays div:first-child').innerText = t[lang].aiSays;
+      document.getElementById('emotionLabel').innerText = t[lang].emotion;
+      document.querySelector('#rightNow').querySelector('[style]').innerText = t[lang].rightNow;
+    }
+    updateTexts();
+    async function fetchState() {
+      try {
+        const resp = await fetch('https://YOUR_WORKER_SUBDOMAIN.workers.dev/api/state');
+        const data = await resp.json();
+        render(data);
+      } catch(e) { console.error(e); }
+    }
+    function render(d) {
+      const idx = d.nepse?.index || {};
+      document.getElementById('idxVal').innerText = idx.value?.toLocaleString() || '--';
+      const chg = idx.change > 0 ? '+' : '';
+      document.getElementById('idxChange').innerHTML = `${chg}${idx.change?.toFixed(2) || '0.00'} (${idx.percent?.toFixed(2)}%)`;
+      document.getElementById('idxMeta').innerHTML = `${t[lang].turnover}: Rs.${(d.nepse?.turnover/1e9).toFixed(2)} Arba`;
+      document.getElementById('predictionText').innerText = lang==='ne' ? d.prediction_ne : d.prediction_en;
+      document.getElementById('posterLine').innerText = lang==='ne' ? d.poster_ne : d.poster_en;
+      document.getElementById('tenYCheck').innerText = lang==='ne' ? d.teny_summary_ne : d.teny_summary_en;
+      const eg = d.emotion_index;
+      document.getElementById('emotionValue').innerText = eg;
+      document.getElementById('meterFill').style.width = eg + '%';
+      if (audioEnabled) tickSound.play().catch(()=>{});
+    }
+    fetchState();
+    setInterval(fetchState, 20000);
+  </script>
+</body>
+</html>
