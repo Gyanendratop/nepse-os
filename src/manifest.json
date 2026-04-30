@@ -1,0 +1,14 @@
+{
+  "name": "NEPSE OS AI",
+  "short_name": "NEPSE",
+  "start_url": "/?utm=homescreen",
+  "display": "standalone",
+  "background_color": "#0A0A0B",
+  "theme_color": "#0A0A0B",
+  "description": "Nepal stock market live - AI predictions, fastest on 2G",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "lang": "ne"
+}
