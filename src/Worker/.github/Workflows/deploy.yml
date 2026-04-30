@@ -1,0 +1,23 @@
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up public directory
+        run: |
+          mkdir public
+          cp src/index.html public/
+          cp src/manifest.json public/
+          cp src/sw.js public/
+          mkdir -p public/data
+          cp src/data/10y-finance.js public/data/
+          cp robots.txt public/
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          cname: nepseos.com.np
